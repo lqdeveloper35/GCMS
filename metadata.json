@@ -1,0 +1,8 @@
+{
+  "name": "Gerador de Conteúdo e Criativos com IA",
+  "description": "Uma aplicação poderosa para gerar cronogramas de conteúdo para redes sociais, analisar designs, e criar prompts detalhados para geração de imagens e vídeos com IA.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "prompt": ""
+}
