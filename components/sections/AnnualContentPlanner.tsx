@@ -124,20 +124,41 @@ export const AnnualContentPlanner: React.FC = () => {
         navigator.clipboard.writeText(JSON.stringify(schedule, null, 2));
     };
 
-    const exportToXLSX = () => {
+    const exportToCSV = () => {
         if (schedule.length === 0) return;
-        const headers = Object.keys(schedule[0]).join(',');
-        const rows = schedule.map(row => 
-            Object.values(row).map(value => `"${String(value).replace(/"/g, '""')}"`).join(',')
-        );
-        const csvContent = `data:text/csv;charset=utf-8,${headers}\n${rows.join('\n')}`;
-        const encodedUri = encodeURI(csvContent);
+
+        const separator = ';';
+        const headers = Object.keys(schedule[0]);
+        const csvHeader = headers.join(separator);
+
+        const csvRows = schedule.map(row => {
+            return headers.map(header => {
+                const value = (row as any)[header] ?? '';
+                const stringValue = String(value);
+
+                // If value contains separator, newlines, or double quotes, enclose it in double quotes.
+                // Also, any double quotes inside the value must be escaped by another double quote.
+                if (stringValue.includes(separator) || stringValue.includes('\n') || stringValue.includes('"')) {
+                    const escapedValue = stringValue.replace(/"/g, '""');
+                    return `"${escapedValue}"`;
+                }
+
+                return stringValue;
+            }).join(separator);
+        });
+
+        const bom = '\uFEFF';
+        const csvContent = `${bom}${csvHeader}\n${csvRows.join('\n')}`;
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "cronograma_conteudo.xlsx");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "cronograma_conteudo.csv");
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     return (
@@ -185,7 +206,7 @@ export const AnnualContentPlanner: React.FC = () => {
                     <h3 className="text-xl font-bold mb-4">Cronograma de Conteúdo Gerado</h3>
                     <div className="flex flex-wrap gap-2 mb-4">
                         <Button onClick={copySchedule} variant="secondary"><CopyIcon className="w-4 h-4 mr-2" /> Copiar (JSON)</Button>
-                        <Button onClick={exportToXLSX} variant="secondary"><DownloadIcon className="w-4 h-4 mr-2" /> Exportar para XLSX</Button>
+                        <Button onClick={exportToCSV} variant="secondary"><DownloadIcon className="w-4 h-4 mr-2" /> Exportar para CSV (Excel)</Button>
                         <Button variant="secondary" disabled={true} title="Funcionalidade futura (integração com Firebase)"><SaveIcon className="w-4 h-4 mr-2"/> Salvar Cronograma</Button>
                     </div>
                     <div className="overflow-x-auto bg-white rounded-lg border border-gray-200">
@@ -198,7 +219,7 @@ export const AnnualContentPlanner: React.FC = () => {
                             <tbody className="divide-y divide-gray-200">
                                 {schedule.map((post, index) => (
                                     <tr key={index} className="hover:bg-gray-50">
-                                        {Object.values(post).map((value, i) => <td key={i} className="px-6 py-4 whitespace-nowrap text-gray-700">{String(value)}</td>)}
+                                        {Object.values(post).map((value, i) => <td key={i} className="px-6 py-4 whitespace-pre-wrap text-gray-700">{String(value)}</td>)}
                                     </tr>
                                 ))}
                             </tbody>
